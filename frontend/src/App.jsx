@@ -1,10 +1,16 @@
+import ImageUploader from "./components/ImageDrop"
+import Navbar from "./components/Navbar"
+
 function App() {
 
   return (
     <>
-      <h1>React App</h1>
+      <div className="w-full flex md:p-12 p-3">
+        <Navbar />
+      </div>
+      <ImageUploader />
     </>
-  )
+  );
 }
 
 export default App

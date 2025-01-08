@@ -8,7 +8,7 @@ export default {
     require('daisyui'),
   ],
   daisyui: {
-    themes: ['acid', 'night']
+    themes: ['night', 'acid']
   }
 };
 

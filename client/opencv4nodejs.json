@@ -1,0 +1,5 @@
+{
+  "opencvIncludeDir": "C:\\OpenCV\\build\\include",
+  "opencvLibDir": "C:\\OpenCV\\build\\x64\\vc15\\lib",
+  "opencvBinDir": "C:\\OpenCV\\build\\x64\\vc15\\bin"
+}
