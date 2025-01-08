@@ -1,61 +1,130 @@
 import React, { useState } from "react";
-import { useDropzone } from "react-dropzone";
+import axios from "axios";
 
-const ImageUploader = () => {
+const App = () => {
   const [initialImage, setInitialImage] = useState(null);
   const [finalImage, setFinalImage] = useState(null);
+  const [result, setResult] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
-  const onDrop = (acceptedFiles, setImage) => {
-    const file = acceptedFiles[0];
-    setImage(URL.createObjectURL(file));
+  const handleImageUpload = (e, setImage) => {
+    setImage(e.target.files[0]);
   };
 
-  const { getRootProps: getRootProps1, getInputProps: getInputProps1 } =
-    useDropzone({
-      onDrop: (files) => onDrop(files, setInitialImage),
-    });
+  const handleSubmit = async () => {
+    const formData = new FormData();
+    formData.append("initialImage", initialImage);
+    formData.append("finalImage", finalImage);
 
-  const { getRootProps: getRootProps2, getInputProps: getInputProps2 } =
-    useDropzone({
-      onDrop: (files) => onDrop(files, setFinalImage),
-    });
+    try {
+      const response = await axios.post(
+        "http://localhost:3001/api/v1/detect-papers",
+        formData
+      );
+      setResult(response.data);
+    } catch (error) {
+      console.error("Error uploading images:", error);
+    }
+  };
+
+  const renderBoundingBoxes = (image, papers, imageType) => {
+    const handleImageLoad = (e) => {
+      setImageDimensions({
+        width: e.target.naturalWidth,
+        height: e.target.naturalHeight,
+      });
+    };
+
+    return (
+      <div className="relative" style={{ width: "400px", height: "300px" }}>
+        <img
+          src={URL.createObjectURL(image)}
+          alt={imageType}
+          className="border rounded w-full h-full object-cover"
+          onLoad={handleImageLoad}
+        />
+        {papers.map((paper, idx) => {
+          const [x1, y1, x2, y2] = paper.coordinates;
+
+          // Calculate scale for bounding boxes
+          const scaleX = 400 / imageDimensions.width;
+          const scaleY = 300 / imageDimensions.height;
+
+          const boxStyle = {
+            position: "absolute",
+            top: `${y1 * scaleY}px`,
+            left: `${x1 * scaleX}px`,
+            width: `${(x2 - x1) * scaleX}px`,
+            height: `${(y2 - y1) * scaleY}px`,
+            border: "2px solid",
+            borderColor: paper.status === "unchanged" ? "green" : "red",
+          };
+
+          return <div key={`${imageType}-${idx}`} style={boxStyle} />;
+        })}
+      </div>
+    );
+  };
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="flex gap-4">
-        <div {...getRootProps1()} className="border-dashed border-2 p-4">
-          <input {...getInputProps1()} />
-          {initialImage ? (
-            <img
-              src={initialImage}
-              alt="Initial"
-              className="w-40 h-40 object-cover"
+    <div className="p-4 max-w-screen-lg mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Paper Location Detection</h1>
+      <div className="flex flex-col gap-4">
+        <div className="card bordered">
+          <label className="btn">
+            Upload Initial Image
+            <input
+              type="file"
+              className="hidden"
+              onChange={(e) => handleImageUpload(e, setInitialImage)}
             />
-          ) : (
-            <p>Drag and drop initial image</p>
-          )}
+          </label>
         </div>
-        <div {...getRootProps2()} className="border-dashed border-2 p-4">
-          <input {...getInputProps2()} />
-          {finalImage ? (
-            <img
-              src={finalImage}
-              alt="Final"
-              className="w-40 h-40 object-cover"
+
+        <div className="card bordered">
+          <label className="btn">
+            Upload Final Image
+            <input
+              type="file"
+              className="hidden"
+              onChange={(e) => handleImageUpload(e, setFinalImage)}
             />
-          ) : (
-            <p>Drag and drop final image</p>
-          )}
+          </label>
         </div>
+
+        <button className="btn btn-primary" onClick={handleSubmit}>
+          Submit
+        </button>
       </div>
-      <button
-        className="btn btn-primary mt-4"
-        onClick={() => console.log("Submit")}
-      >
-        Submit
-      </button>
+
+      {result && (
+        <div className="mt-4">
+          <h2 className="text-lg font-bold">Detection Results:</h2>
+          <div className="flex gap-4">
+            <div>
+              <h3 className="font-bold mb-2">Initial Image:</h3>
+              {renderBoundingBoxes(initialImage, result.papers, "initial")}
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2">Final Image:</h3>
+              {renderBoundingBoxes(finalImage, result.papers, "final")}
+            </div>
+          </div>
+
+          <h3 className="text-xl font-bold mt-4">
+            Conclusion:{" "}
+            {result.papers.some((p) => p.status === "mishandled")
+              ? "One or more papers have been mishandled."
+              : "No papers have been mishandled."}
+          </h3>
+        </div>
+      )}
     </div>
   );
 };
 
-export default ImageUploader;
+export default App;

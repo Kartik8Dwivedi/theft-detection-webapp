@@ -1,23 +1,76 @@
-import express from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
+import express from "express";
+import cors from "cors";
+import morgan from "morgan";
+import { exec } from "child_process";
+import path from "path";
+import fs from "fs/promises";
+import { fileURLToPath } from "url";
+import multer from "multer";
 
-
-import ApiRoutes from './Routes/index.js';
-import Config from './Config/serverConfig.js';
+import ApiRoutes from "./Routes/index.js";
+import Config from "./Config/serverConfig.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({extended:true}));
-app.use(morgan('tiny'));
- 
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan("tiny"));
+
 Config.RateLimiter(app);
 
-app.use('/api', ApiRoutes);
+const upload = multer({ dest: "uploads/" });
 
+const getDirName = () => path.dirname(fileURLToPath(import.meta.url));
 
-app.listen(Config.PORT, () => {
-  console.log(`Server is running on http://localhost:${Config.PORT}/`);
+app.use("/api", ApiRoutes);
+
+app.post(
+  "/api/v1/detect-papers",
+  upload.fields([
+    { name: "initialImage", maxCount: 1 },
+    { name: "finalImage", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    const { files } = req;
+    if (!files.initialImage || !files.finalImage) {
+      return res.status(400).json({ error: "Both images are required." });
+    }
+
+    const initialImagePath = files.initialImage[0].path;
+    const finalImagePath = files.finalImage[0].path;
+
+    try {
+      const pythonScriptPath = path.join(getDirName(), "detect_papers.py");
+
+      exec(
+        `python ${pythonScriptPath} ${initialImagePath} ${finalImagePath}`,
+        async (error, stdout, stderr) => {
+          await fs.unlink(initialImagePath);
+          await fs.unlink(finalImagePath);
+
+          if (error) {
+            console.error(`Error: ${stderr}`);
+            return res.status(500).json({ error: "Error processing images" });
+          }
+
+          try {
+            const result = JSON.parse(stdout);
+            res.json(result);
+          } catch (parseError) {
+            console.error("Error parsing Python script output:", parseError);
+            res.status(500).json({ error: "Error processing results" });
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Server error:", error);
+      res.status(500).json({ error: "Server error" });
+    }
+  }
+);
+
+const PORT = Config.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}/`);
 });
