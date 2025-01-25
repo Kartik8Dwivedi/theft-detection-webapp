@@ -42,7 +42,7 @@ app.use("/api", ApiRoutes);
 
 
 
-exec("apt install python3-opencv-python", (err, stdout, stderr) => {
+exec("pipx install opencv-python", (err, stdout, stderr) => {
   if (err) {
     console.error(`Error: ${err}`);
     return;
