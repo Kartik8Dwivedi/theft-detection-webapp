@@ -25,6 +25,34 @@ const getDirName = () => path.dirname(fileURLToPath(import.meta.url));
 
 app.use("/api", ApiRoutes);
 
+exec(
+  "sudo apt update && sudo apt install -y python3.12 python3-pip",
+  (err, stdout, stderr) => {
+    if (err) {
+      console.error(`Error: ${err}`);
+      return;
+    }
+    if (stderr) {
+      console.error(`stderr: ${stderr}`);
+      return;
+    }
+    console.log(`stdout: ${stdout}`);
+  }
+);
+
+exec("pip install opencv-python", (err, stdout, stderr) => {
+  if (err) {
+    console.error(`Error: ${err}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`stderr: ${stderr}`);
+    return;
+  }
+  console.log(`stdout: ${stdout}`);
+});
+
+
 // app.post(
 //   "/api/v1/detect-papers",
 //   upload.fields([
