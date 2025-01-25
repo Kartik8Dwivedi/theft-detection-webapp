@@ -5,7 +5,7 @@ function App() {
 
   return (
     <>
-      <div className="w-full flex md:p-12 p-3">
+      <div className="w-full flex md:p-12 p-3 md:pb-4">
         <Navbar />
       </div>
       <ImageUploader />

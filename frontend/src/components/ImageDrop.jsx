@@ -5,10 +5,6 @@ const App = () => {
   const [initialImage, setInitialImage] = useState(null);
   const [finalImage, setFinalImage] = useState(null);
   const [result, setResult] = useState(null);
-  const [imageDimensions, setImageDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
 
   const handleImageUpload = (e, setImage) => {
     setImage(e.target.files[0]);
@@ -21,7 +17,7 @@ const App = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3001/api/v1/detect-papers",
+        import.meta.env.VITE_REACT_APP_API_URL,
         formData
       );
       setResult(response.data);
@@ -30,72 +26,61 @@ const App = () => {
     }
   };
 
-  const renderBoundingBoxes = (image, papers, imageType) => {
-    const handleImageLoad = (e) => {
-      setImageDimensions({
-        width: e.target.naturalWidth,
-        height: e.target.naturalHeight,
-      });
-    };
-
-    return (
-      <div className="relative" style={{ width: "400px", height: "300px" }}>
-        <img
-          src={URL.createObjectURL(image)}
-          alt={imageType}
-          className="border rounded w-full h-full object-cover"
-          onLoad={handleImageLoad}
-        />
-        {papers.map((paper, idx) => {
-          const [x1, y1, x2, y2] = paper.coordinates;
-
-          // Calculate scale for bounding boxes
-          const scaleX = 400 / imageDimensions.width;
-          const scaleY = 300 / imageDimensions.height;
-
-          const boxStyle = {
-            position: "absolute",
-            top: `${y1 * scaleY}px`,
-            left: `${x1 * scaleX}px`,
-            width: `${(x2 - x1) * scaleX}px`,
-            height: `${(y2 - y1) * scaleY}px`,
-            border: "2px solid",
-            borderColor: paper.status === "unchanged" ? "green" : "red",
-          };
-
-          return <div key={`${imageType}-${idx}`} style={boxStyle} />;
-        })}
-      </div>
-    );
-  };
-
   return (
-    <div className="p-4 max-w-screen-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Paper Location Detection</h1>
-      <div className="flex flex-col gap-4">
-        <div className="card bordered">
-          <label className="btn">
-            Upload Initial Image
-            <input
-              type="file"
-              className="hidden"
-              onChange={(e) => handleImageUpload(e, setInitialImage)}
-            />
-          </label>
+    <div className="p-4 pt-2 max-w-screen-lg mx-auto">
+      <h1 className="text-2xl font-bold mb-4"></h1>
+      <div className="flex flex-col gap-6 ">
+        <div className="flex justify-between gap-6">
+          {/* Initial Image Upload Box */}
+          <div className="relative w-1/2 aspect-square border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center hover:border-blue-500 transition">
+            {initialImage ? (
+              <img
+                src={URL.createObjectURL(initialImage)}
+                alt="Initial"
+                className="w-full h-full object-cover rounded-lg"
+              />
+            ) : (
+              <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer">
+                <span className="text-gray-400 text-lg font-medium">
+                  + Upload Initial Image
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => handleImageUpload(e, setInitialImage)}
+                />
+              </label>
+            )}
+          </div>
+
+          {/* Final Image Upload Box */}
+          <div className="relative w-1/2 aspect-square border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center hover:border-blue-500 transition">
+            {finalImage ? (
+              <img
+                src={URL.createObjectURL(finalImage)}
+                alt="Final"
+                className="w-full h-full object-cover rounded-lg"
+              />
+            ) : (
+              <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer">
+                <span className="text-gray-400 text-lg font-medium">
+                  + Upload Final Image
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => handleImageUpload(e, setFinalImage)}
+                />
+              </label>
+            )}
+          </div>
         </div>
 
-        <div className="card bordered">
-          <label className="btn">
-            Upload Final Image
-            <input
-              type="file"
-              className="hidden"
-              onChange={(e) => handleImageUpload(e, setFinalImage)}
-            />
-          </label>
-        </div>
-
-        <button className="btn btn-primary" onClick={handleSubmit}>
+        {/* Submit Button */}
+        <button
+          className="btn btn-primary w-full py-3 text-lg font-bold"
+          onClick={handleSubmit}
+        >
           Submit
         </button>
       </div>
@@ -106,18 +91,27 @@ const App = () => {
           <div className="flex gap-4">
             <div>
               <h3 className="font-bold mb-2">Initial Image:</h3>
-              {renderBoundingBoxes(initialImage, result.papers, "initial")}
+              <img
+                src={`data:image/png;base64,${result.initial_image}`}
+                alt="Initial Image"
+                className="border rounded w-full h-full object-cover"
+              />
             </div>
 
             <div>
               <h3 className="font-bold mb-2">Final Image:</h3>
-              {renderBoundingBoxes(finalImage, result.papers, "final")}
+              <img
+                src={`data:image/png;base64,${result.final_image}`}
+                alt="Final Image"
+                className="border rounded w-full h-full object-cover"
+              />
             </div>
           </div>
 
-          <h3 className="text-xl font-bold mt-4">
+          <h3 className="text-xl font-bold mt-8">
             Conclusion:{" "}
-            {result.papers.some((p) => p.status === "mishandled")
+            {result.initial_papers.some((p) => p.status === "mishandled") ||
+            result.final_papers.some((p) => p.status === "mishandled")
               ? "One or more papers have been mishandled."
               : "No papers have been mishandled."}
           </h3>

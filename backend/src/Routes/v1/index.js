@@ -12,13 +12,13 @@ router.get('/', (req, res) => {
     res.send(`<h1>Hello from the microservice!</h1>`);
 });
 
-router.post(
-  "/detect-papers",
-  upload.fields([
-    { name: "initialImage", maxCount: 1 },
-    { name: "finalImage", maxCount: 1 },
-  ]),
-    detectPaper
-);
+// router.post(
+//   "/detect-papers",
+//   upload.fields([
+//     { name: "initialImage", maxCount: 1 },
+//     { name: "finalImage", maxCount: 1 },
+//   ]),
+//     detectPaper
+// );
 
 export default router;

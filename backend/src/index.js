@@ -25,6 +25,51 @@ const getDirName = () => path.dirname(fileURLToPath(import.meta.url));
 
 app.use("/api", ApiRoutes);
 
+// app.post(
+//   "/api/v1/detect-papers",
+//   upload.fields([
+//     { name: "initialImage", maxCount: 1 },
+//     { name: "finalImage", maxCount: 1 },
+//   ]),
+//   async (req, res) => {
+//     const { files } = req;
+//     if (!files.initialImage || !files.finalImage) {
+//       return res.status(400).json({ error: "Both images are required." });
+//     }
+
+//     const initialImagePath = files.initialImage[0].path;
+//     const finalImagePath = files.finalImage[0].path;
+
+//     try {
+//       const pythonScriptPath = path.join(getDirName(), "detect_papers.py");
+
+//       exec(
+//         `python ${pythonScriptPath} ${initialImagePath} ${finalImagePath}`,
+//         async (error, stdout, stderr) => {
+//           await fs.unlink(initialImagePath);
+//           await fs.unlink(finalImagePath);
+
+//           if (error) {
+//             console.error(`Error: ${stderr}`);
+//             return res.status(500).json({ error: "Error processing images" });
+//           }
+
+//           try {
+//             const result = JSON.parse(stdout);
+//             res.json(result);
+//           } catch (parseError) {
+//             console.error("Error parsing Python script output:", parseError);
+//             res.status(500).json({ error: "Error processing results" });
+//           }
+//         }
+//       );
+//     } catch (error) {
+//       console.error("Server error:", error);
+//       res.status(500).json({ error: "Server error" });
+//     }
+//   }
+// );
+
 app.post(
   "/api/v1/detect-papers",
   upload.fields([
@@ -41,16 +86,22 @@ app.post(
     const finalImagePath = files.finalImage[0].path;
 
     try {
-      const pythonScriptPath = path.join(getDirName(), "detect_papers.py");
-
+      // const pythonScriptPath = path.join(__dirname, "detect_papers.py");
+      const pythonScriptPath = path.join(getDirName(), "detect_papers_1.py");
       exec(
         `python ${pythonScriptPath} ${initialImagePath} ${finalImagePath}`,
+        { maxBuffer: 1024 * 5000 },
         async (error, stdout, stderr) => {
-          await fs.unlink(initialImagePath);
-          await fs.unlink(finalImagePath);
+          try {
+            await fs.unlink(initialImagePath);
+            await fs.unlink(finalImagePath);
+          } catch (unlinkError) {
+            console.error("Error deleting temporary files:", unlinkError);
+          }
 
           if (error) {
             console.error(`Error: ${stderr}`);
+            console.log("Error processing images", error);
             return res.status(500).json({ error: "Error processing images" });
           }
 
