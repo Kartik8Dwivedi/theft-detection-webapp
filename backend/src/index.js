@@ -42,17 +42,6 @@ app.use("/api", ApiRoutes);
 
 
 
-exec("pipx install opencv-python", (err, stdout, stderr) => {
-  if (err) {
-    console.error(`Error: ${err}`);
-    return;
-  }
-  if (stderr) {
-    console.error(`stderr: ${stderr}`);
-    return;
-  }
-  console.log(`stdout: ${stdout}`);
-});
 
 
 // app.post(
@@ -150,6 +139,22 @@ app.post(
     }
   }
 );
+
+
+app.get("/run-python", (req, res) => {
+  exec(
+    "python ./src/detect_papers.py",
+    (error, stdout, stderr) => {
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+      if (stderr) {
+        return res.status(500).json({ error: stderr });
+      }
+      res.json({ output: stdout });
+    }
+  );
+});
 
 const PORT = Config.PORT || 3001;
 app.listen(PORT, () => {
